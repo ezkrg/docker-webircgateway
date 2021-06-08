@@ -1,0 +1,45 @@
+---
+kind: pipeline
+type: docker
+name: build
+
+steps:
+  - name: docker
+    image: docker:stable-dind
+    privileged: true
+    detach: true
+    command: [ "dockerd", "--host=tcp://0.0.0.0:2375" ]
+
+  - name: source
+    image: alpine:3.13
+    commands:
+    - apk add --update --no-cache curl git jq
+    - LATEST=$(curl -s https://api.github.com/repos/kiwiirc/webircgateway/commits | jq -r '.[0].sha' | cut -c1-7)
+    - if curl -sfL https://hub.docker.com/v2/repositories/ezkrg/webircgateway/tags/$LATEST > /dev/null; then echo "tag $LATEST already exist"; exit 78; fi
+    - echo -n "$LATEST" > .tag
+    - git clone -n https://github.com/kiwiirc/webircgateway.git
+    - cd webircgateway
+    - git checkout $LATEST
+
+  - name: build
+    image: ezkrg/buildx:latest
+    environment:
+      USER:
+        from_secret: DHU
+      PASSWORD:
+        from_secret: DHP
+      DOCKER_HOST: tcp://docker:2375
+    commands:
+    - sleep 5
+    - TAG=$(cat .tag)
+    - docker buildx create --use --name docker --node docker --platform linux/amd64 --driver docker-container $DOCKER_HOST
+    - echo $PASSWORD | docker login --username $USER --password-stdin
+    - docker buildx build --load --cache-from ezkrg/cache:webircgateway --cache-to ezkrg/cache:webircgateway -t ezkrg/webircgateway:$TAG .
+    - docker push ezkrg/webircgateway:$TAG
+    - docker tag ezkrg/webircgateway:$TAG ezkrg/webircgateway:latest
+    - docker push ezkrg/webircgateway:latest
+---
+kind: signature
+hmac: 0bb125fd377149aff211c00427d02a1bf3b9a21515bbd60969f1bc7c73bdc414
+
+...
