@@ -1,8 +1,11 @@
 FROM golang:1-buster AS builder
 
-COPY webircgateway /tmp/webircgateway
+ARG VERSION
 
-RUN cd /tmp/webircgateway \
+RUN cd /tmp/ \
+ && git clone -n https://github.com/kiwiirc/webircgateway.git \
+ && cd webircgateway \
+ && git checkout ${VERSION} \
  && make
 
 # ---
