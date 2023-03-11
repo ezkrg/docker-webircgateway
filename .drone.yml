@@ -5,7 +5,7 @@ name: build
 
 steps:
   - name: docker
-    image: docker:stable-dind
+    image: docker:dind
     privileged: true
     detach: true
     command: [ "dockerd", "--host=tcp://0.0.0.0:2375" ]
@@ -37,6 +37,6 @@ steps:
     - docker push ezkrg/webircgateway:latest
 ---
 kind: signature
-hmac: 5e3d3b8166ae9ff16e09e1bce017c10012dfb42ff522fa3ba48a25bdc12ae732
+hmac: 5cd03f6d8ff95cd926b96eb8ffbe83721eddaa5438e596979f05e31f46d4a5d0
 
 ...
